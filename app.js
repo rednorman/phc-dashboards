@@ -131,8 +131,15 @@ function importDashboardData(file){
     try{
       const data=JSON.parse(ev.target.result);
       let count=0;
-      for(const[k,v] of Object.entries(data)){localStorage.setItem(k,v);count++;}
-      document.getElementById('lastUpdated').textContent='✅ Imported '+count+' entries — reloading...';
+      for(const[k,v] of Object.entries(data)){
+        localStorage.setItem(k,v);
+        // Push each entry to server so teammates see it
+        if(k.startsWith('phc_coe_freeze_')||k.startsWith('phc_coe_csat_')||k.startsWith('phc_total_')){
+          callSaveData(k, v);
+          count++;
+        }
+      }
+      document.getElementById('lastUpdated').textContent='✅ Imported and synced '+count+' entries — reloading...';
       setTimeout(()=>location.reload(),1500);
     }catch(e){alert('Import failed: '+e.message);}
   };
