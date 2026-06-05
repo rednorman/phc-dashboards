@@ -40,7 +40,7 @@ function saveFreeze(coeId,periodKey){
   if(!Object.keys(state.programs).length||!state.phcTotal) return false;
   const progs={};
   for(const[k,d] of Object.entries(state.programs)){progs[k]={volume:d.volume,ttfr:d.ttfr,ttr:d.ttr,byCategory:d.byCategory,byTier:d.byTier,byOwnership:d.byOwnership};}
-  try{localStorage.setItem(FREEZE_KEY+coeId+'_'+periodKey,JSON.stringify({programs:progs,phcTotal:state.phcTotal,frozenAt:Date.now()}));return true;}catch(e){return false;}
+  try{const _fv=JSON.stringify({programs:progs,phcTotal:state.phcTotal,frozenAt:Date.now()});localStorage.setItem(FREEZE_KEY+coeId+'_'+periodKey,_fv);callSaveData(FREEZE_KEY+coeId+'_'+periodKey,_fv);return true;}catch(e){return false;}
 }
 function updateFreezeUI(){
   const btn=document.getElementById('freezeBtn'); if(!btn) return;
@@ -773,9 +773,10 @@ async function loadCSAT(){
 }
 function saveCSAT(pk,rows){
   state.csatData[pk]=rows;
-  if(window.cowork||!window.cowork){
-    try{localStorage.setItem(csatKey()+pk,JSON.stringify(rows));}catch(e){}
-  } else if(BACKEND_URL&&BACKEND_URL!=='__BACKEND_URL__'){
+  const _cv=JSON.stringify(rows);
+  try{localStorage.setItem(csatKey()+pk,_cv);}catch(e){}
+  callSaveData(csatKey()+pk,_cv);
+} else if(BACKEND_URL&&BACKEND_URL!=='__BACKEND_URL__'){
     fetch(BACKEND_URL+'?key=10GyLkckn0E6fcEZYeQm1GPa8-PX8d09&action=setCsat&coe='+encodeURIComponent(state.activeCoe.id)+'&pk='+encodeURIComponent(pk),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})}).catch(()=>{});
   }
 }
@@ -985,3 +986,4 @@ function switchTab(tab,btn){
 buildDropdowns();
 buildTabs();
 loadCSAT();
+loadSharedData();
