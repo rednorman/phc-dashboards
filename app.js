@@ -109,6 +109,35 @@ function getMonthRange(y,m){
   const lbl=['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m];
   return{start:`${y}-${mm}-01`,end:`${y}-${mm}-${ld}`,label:`${lbl} ${y}`,key:`${y}_${mm}`};
 }
+
+function exportDashboardData(){
+  const out={};
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i);
+    if(k&&(k.startsWith('phc_coe_freeze_')||k.startsWith('phc_coe_csat_')||k.startsWith('phc_total_'))){
+      out[k]=localStorage.getItem(k);
+    }
+  }
+  const blob=new Blob([JSON.stringify(out)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='phc-dashboard-data.json';a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('lastUpdated').textContent='✅ Exported '+Object.keys(out).length+' data entries';
+}
+function importDashboardData(file){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      let count=0;
+      for(const[k,v] of Object.entries(data)){localStorage.setItem(k,v);count++;}
+      document.getElementById('lastUpdated').textContent='✅ Imported '+count+' entries — reloading...';
+      setTimeout(()=>location.reload(),1500);
+    }catch(e){alert('Import failed: '+e.message);}
+  };
+  reader.readAsText(file);
+}
 function buildDropdowns(){
   // Permanent mode indicator - won't be overwritten
   const _modeDiv = document.createElement('div');
@@ -136,6 +165,19 @@ function buildDropdowns(){
   if(_defV.y){monthSel.value=JSON.stringify(_defV);state.period=getMonthRange(_defV.y,_defV.m);}
   document.documentElement.style.setProperty('--accent', state.activeCoe.accentColor);
   document.getElementById('headerTitle').textContent = 'PHC ' + state.activeCoe.displayName + ' Dashboard';
+  // Add export/import buttons if not already there
+  if(!document.getElementById('exportBtn')){
+    const hc=document.querySelector('.header-controls');
+    const expBtn=document.createElement('button');
+    expBtn.id='exportBtn';expBtn.className='btn-refresh';expBtn.style.background='rgba(255,255,255,0.15)';expBtn.style.fontSize='11px';
+    expBtn.textContent='📤 Export';expBtn.onclick=exportDashboardData;
+    const impLbl=document.createElement('label');
+    impLbl.className='btn-csat-upload';impLbl.style.fontSize='11px';impLbl.textContent='📥 Import';
+    const impInp=document.createElement('input');
+    impInp.type='file';impInp.accept='.json';impInp.style.display='none';
+    impInp.onchange=e=>importDashboardData(e.target.files[0]);
+    impLbl.appendChild(impInp);hc.appendChild(expBtn);hc.appendChild(impLbl);
+  }
 }
 function onPeriodChange(){
   const sel=document.getElementById('monthSel'); if(!sel.value) return;
@@ -717,7 +759,7 @@ margin-bottom:4px;">\uD83D\uDD0D Root Cause Analysis \u2014 ${state.period?.labe
 function csatKey(){return`phc_coe_csat_${state.activeCoe.id}_v1_`;}
 async function loadCSAT(){
   state.csatData={};
-  if(window.cowork){
+  if(true){
     try{const key=csatKey();for(const k of Object.keys(localStorage)){if(k.startsWith(key)){const pk=k.slice(key.length);state.csatData[pk]=JSON.parse(localStorage.getItem(k)||'[]');}}}catch(e){}
     updateCsatChip();
   } else if(BACKEND_URL&&BACKEND_URL!=='__BACKEND_URL__'&&state.period){
@@ -731,7 +773,7 @@ async function loadCSAT(){
 }
 function saveCSAT(pk,rows){
   state.csatData[pk]=rows;
-  if(window.cowork){
+  if(window.cowork||!window.cowork){
     try{localStorage.setItem(csatKey()+pk,JSON.stringify(rows));}catch(e){}
   } else if(BACKEND_URL&&BACKEND_URL!=='__BACKEND_URL__'){
     fetch(BACKEND_URL+'?key=10GyLkckn0E6fcEZYeQm1GPa8-PX8d09&action=setCsat&coe='+encodeURIComponent(state.activeCoe.id)+'&pk='+encodeURIComponent(pk),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})}).catch(()=>{});
