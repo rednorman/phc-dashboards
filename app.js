@@ -239,27 +239,27 @@ async function fetchTTFRData(issueKeys){
   return map;
 }
 async function fetchWithCursor(baseJql,fields){
-  const issues=[]; let nextPageToken=null;
+  const issues=[]; let startAt=0;
   const jql=baseJql+' ORDER BY key ASC';
   for(let pg=0;pg<50;pg++){
     try{
       let data;
       if(window.cowork){
         const params={cloudId:CLOUD_ID,jql,fields,maxResults:100};
-        if(nextPageToken) params.nextPageToken=nextPageToken;
+        if(startAt>0) params.startAt=startAt;
         const raw=await window.cowork.callMcpTool(JIRA_TOOL,params);
         data=parseJiraResponse(raw);
       } else {
         const p = {jql, fields, maxResults: 100};
-        if(nextPageToken) p.nextPageToken = nextPageToken;
+        if(startAt>0) p.startAt = startAt;
         data = await callBackend(p);
       }
-      const batch=Array.isArray(data.issues)?data.issues:(data.error?[]:data.issues||[]);
+      const batch=Array.isArray(data.issues)?data.issues:[];
       if(data.error){document.getElementById('lastUpdated').textContent='Backend error: '+data.error; break;}
       if(!batch.length) break;
       issues.push(...batch);
-      if(data.isLast||!data.nextPageToken) break;
-      nextPageToken=data.nextPageToken;
+      if(startAt + batch.length >= (data.total||0)) break;
+      startAt += batch.length;
     }catch(e){break;}
   }
   return issues;
