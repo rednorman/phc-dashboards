@@ -181,7 +181,11 @@ function callBackend(params) {
       if (Array.isArray(p.fields)) p.fields = p.fields.join(',');
       google.script.run
         .withSuccessHandler(resolve)
-        .withFailureHandler(e => reject(new Error(e.message || String(e))))
+        .withFailureHandler(e => {
+        const msg = e.message || String(e);
+        document.getElementById('lastUpdated').textContent = 'Script error: ' + msg;
+        reject(new Error(msg));
+      })
         .getJiraData(p);
     } else {
       const qs = new URLSearchParams(Object.assign({key: API_KEY, action: 'jira'}, params));
@@ -244,7 +248,8 @@ async function fetchWithCursor(baseJql,fields){
         if(nextPageToken) p.nextPageToken = nextPageToken;
         data = await callBackend(p);
       }
-      const batch=Array.isArray(data.issues)?data.issues:[];
+      const batch=Array.isArray(data.issues)?data.issues:(data.error?[]:data.issues||[]);
+      if(data.error){document.getElementById('lastUpdated').textContent='Backend error: '+data.error; break;}
       if(!batch.length) break;
       issues.push(...batch);
       if(data.isLast||!data.nextPageToken) break;
