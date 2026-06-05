@@ -110,6 +110,12 @@ function getMonthRange(y,m){
   return{start:`${y}-${mm}-01`,end:`${y}-${mm}-${ld}`,label:`${lbl} ${y}`,key:`${y}_${mm}`};
 }
 function buildDropdowns(){
+  // Permanent mode indicator - won't be overwritten
+  const _modeDiv = document.createElement('div');
+  _modeDiv.id = '_modeIndicator';
+  _modeDiv.style = 'position:fixed;bottom:0;left:0;background:#333;color:#fff;font-size:11px;padding:3px 8px;z-index:9999';
+  _modeDiv.textContent = 'Mode: ' + (window.cowork ? 'cowork' : (typeof google !== 'undefined' && google.script && google.script.run ? 'gscript.run ✓' : 'fetch-fallback ✗'));
+  document.body.appendChild(_modeDiv);
   const coeSel = document.getElementById('coeSel');
   ALL_COES.forEach(coe => {
     const o = document.createElement('option');
