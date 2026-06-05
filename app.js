@@ -21,6 +21,7 @@ const ALL_FIELDS  = ['security','customfield_10438','customfield_10490','customf
 const FEEDBACK_FIELDS = ['customfield_10454','customfield_10540','summary','status','assignee','customfield_10490','created'];
 const TTFR_FIELDS = ['comment','created'];
 const PHC_FIELDS  = ['labels','created','resolutiondate'];
+const API_KEY = '10GyLkckn0E6fcEZYeQm1GPa8-PX8d09';
 const BACKEND_URL   = 'https://script.google.com/a/macros/gusto.com/s/AKfycbyKMvaNLaPHFT4EMGDB5YlXtKuQzvq_VdGm8dJBNYIfGlJj41dmngIhOgc1gYtNz_V6xw/exec';
 const PHC_CACHE_KEY = 'phc_total_v19_';
 function getCachedPHC(periodKey){
@@ -167,6 +168,30 @@ function parseJiraResponse(raw){
     return JSON.parse(raw?.content?.[0]?.text||raw?.text||JSON.stringify(raw));
   }catch(e){return{};}
 }
+
+// ── BACKEND CALLER (google.script.run when in Apps Script, fetch otherwise) ──
+function callBackend(params) {
+  return new Promise((resolve, reject) => {
+    if (window.cowork) {
+      window.cowork.callMcpTool(JIRA_TOOL, {cloudId: CLOUD_ID, ...params})
+        .then(raw => resolve(parseJiraResponse(raw)))
+        .catch(reject);
+    } else if (typeof google !== 'undefined' && google.script && google.script.run) {
+      const p = Object.assign({}, params);
+      if (Array.isArray(p.fields)) p.fields = p.fields.join(',');
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(e => reject(new Error(e.message || String(e))))
+        .getJiraData(p);
+    } else {
+      const qs = new URLSearchParams(Object.assign({key: API_KEY, action: 'jira'}, params));
+      if (Array.isArray(params.fields)) qs.set('fields', params.fields.join(','));
+      fetch(BACKEND_URL + '?' + qs, {credentials: 'include'})
+        .then(r => r.json()).then(resolve).catch(reject);
+    }
+  });
+}
+
 function getMTOffset(d){const y=d.getUTCFullYear();const m2=new Date(Date.UTC(y,2,1));m2.setUTCDate(1+(7-m2.getUTCDay())%7+7);const n1=new Date(Date.UTC(y,10,1));n1.setUTCDate(1+(7-n1.getUTCDay())%7);return(d>=m2&&d<n1)?-6:-7;}
 function businessHoursBetween(startUTC,endUTC){
   if(!startUTC||!endUTC||endUTC<=startUTC) return 0;
@@ -197,7 +222,7 @@ async function fetchTTFRData(issueKeys){
     try{
       let data;
       if(window.cowork){const raw=await window.cowork.callMcpTool(JIRA_TOOL,{cloudId:CLOUD_ID,jql,fields:TTFR_FIELDS,maxResults:BATCH});data=parseJiraResponse(raw);}
-      else{const qs=new URLSearchParams({key:'10GyLkckn0E6fcEZYeQm1GPa8-PX8d09',action:'jira',jql,fields:TTFR_FIELDS.join(','),maxResults:BATCH});const resp=await fetch(BACKEND_URL+'?'+qs,{credentials:'include'});data=await resp.json();}
+      else{data=await callBackend({jql,fields:TTFR_FIELDS,maxResults:BATCH});}
       for(const issue of(data.issues||[])){const fc=getFirstPublicComment(issue);map[issue.key]=fc?businessHoursBetween(new Date(issue.fields.created),new Date(fc.created)):null;}
     }catch(e){}
   }
@@ -215,10 +240,9 @@ async function fetchWithCursor(baseJql,fields){
         const raw=await window.cowork.callMcpTool(JIRA_TOOL,params);
         data=parseJiraResponse(raw);
       } else {
-        const qs=new URLSearchParams({key:'10GyLkckn0E6fcEZYeQm1GPa8-PX8d09',action:'jira',jql,fields:fields.join(','),maxResults:100});
-        if(nextPageToken) qs.set('nextPageToken',nextPageToken);
-        const resp=await fetch(BACKEND_URL+'?'+qs,{credentials:'include'});
-        data=await resp.json();
+        const p = {jql, fields, maxResults: 100};
+        if(nextPageToken) p.nextPageToken = nextPageToken;
+        data = await callBackend(p);
       }
       const batch=Array.isArray(data.issues)?data.issues:[];
       if(!batch.length) break;
