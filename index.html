@@ -409,7 +409,7 @@ async function fetchTTFRData(issueKeys){
     try{
       let data;
       if(window.cowork){const raw=await window.cowork.callMcpTool(JIRA_TOOL,{cloudId:CLOUD_ID,jql,fields:TTFR_FIELDS,maxResults:BATCH});data=parseJiraResponse(raw);}
-      else{const qs=new URLSearchParams({action:'jira',jql,fields:TTFR_FIELDS.join(','),maxResults:BATCH});const resp=await fetch(BACKEND_URL+'?'+qs);data=await resp.json();}
+      else{const qs=new URLSearchParams({key:'10GyLkckn0E6fcEZYeQm1GPa8-PX8d09',action:'jira',jql,fields:TTFR_FIELDS.join(','),maxResults:BATCH});const resp=await fetch(BACKEND_URL+'?'+qs);data=await resp.json();}
       for(const issue of(data.issues||[])){const fc=getFirstPublicComment(issue);map[issue.key]=fc?businessHoursBetween(new Date(issue.fields.created),new Date(fc.created)):null;}
     }catch(e){}
   }
@@ -427,7 +427,7 @@ async function fetchWithCursor(baseJql,fields){
         const raw=await window.cowork.callMcpTool(JIRA_TOOL,params);
         data=parseJiraResponse(raw);
       } else {
-        const qs=new URLSearchParams({action:'jira',jql,fields:fields.join(','),maxResults:100});
+        const qs=new URLSearchParams({key:'10GyLkckn0E6fcEZYeQm1GPa8-PX8d09',action:'jira',jql,fields:fields.join(','),maxResults:100});
         if(nextPageToken) qs.set('nextPageToken',nextPageToken);
         const resp=await fetch(BACKEND_URL+'?'+qs);
         data=await resp.json();
@@ -897,7 +897,7 @@ async function loadCSAT(){
   } else if(BACKEND_URL&&BACKEND_URL!=='__BACKEND_URL__'&&state.period){
     try{
       const pk=state.period.key;
-      const resp=await fetch(BACKEND_URL+'?action=getCsat&coe='+encodeURIComponent(state.activeCoe.id)+'&pk='+encodeURIComponent(pk));
+      const resp=await fetch(BACKEND_URL+'?key=10GyLkckn0E6fcEZYeQm1GPa8-PX8d09&action=getCsat&coe='+encodeURIComponent(state.activeCoe.id)+'&pk='+encodeURIComponent(pk));
       const data=await resp.json();
       if(data.rows&&data.rows.length){state.csatData[pk]=data.rows;updateCsatChip();refreshCsatSections();}
     }catch(e){}
@@ -908,7 +908,7 @@ function saveCSAT(pk,rows){
   if(window.cowork){
     try{localStorage.setItem(csatKey()+pk,JSON.stringify(rows));}catch(e){}
   } else if(BACKEND_URL&&BACKEND_URL!=='__BACKEND_URL__'){
-    fetch(BACKEND_URL+'?action=setCsat&coe='+encodeURIComponent(state.activeCoe.id)+'&pk='+encodeURIComponent(pk),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})}).catch(()=>{});
+    fetch(BACKEND_URL+'?key=10GyLkckn0E6fcEZYeQm1GPa8-PX8d09&action=setCsat&coe='+encodeURIComponent(state.activeCoe.id)+'&pk='+encodeURIComponent(pk),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})}).catch(()=>{});
   }
 }
 function refreshCsatSections(){
