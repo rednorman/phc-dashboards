@@ -22,7 +22,7 @@ const FEEDBACK_FIELDS = ['customfield_10454','customfield_10540','summary','stat
 const TTFR_FIELDS = ['comment','created'];
 const PHC_FIELDS  = ['labels','created','resolutiondate'];
 const API_KEY = '10GyLkckn0E6fcEZYeQm1GPa8-PX8d09';
-const BACKEND_URL   = 'https://script.google.com/a/macros/gusto.com/s/AKfycbx0-x2FmdA_JfeDLquCPJy6Hh0FgiHg6NksJJg29o4I_LHDQJx6hqLGC5x3qSSYjdi_YA/exec';
+const BACKEND_URL   = 'https://script.google.com/a/macros/gusto.com/s/AKfycbzciBfFEBLJk4QqEDLeK-yxzrE9RVOz74g3cHosj6uOE07JLLZnnU9C24D2ojIlY-ZxGA/exec';
 const PHC_CACHE_KEY = 'phc_total_v19_';
 function getCachedPHC(periodKey){
   try{
@@ -776,9 +776,6 @@ function saveCSAT(pk,rows){
   const _cv=JSON.stringify(rows);
   try{localStorage.setItem(csatKey()+pk,_cv);}catch(e){}
   callSaveData(csatKey()+pk,_cv);
-} else if(BACKEND_URL&&BACKEND_URL!=='__BACKEND_URL__'){
-    fetch(BACKEND_URL+'?key=10GyLkckn0E6fcEZYeQm1GPa8-PX8d09&action=setCsat&coe='+encodeURIComponent(state.activeCoe.id)+'&pk='+encodeURIComponent(pk),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})}).catch(()=>{});
-  }
 }
 function refreshCsatSections(){
   for(const prog of state.activeCoe.programs){const tabId='tab-prog-'+prog.name.toLowerCase().replace(/\W+/g,'-');const el=document.getElementById('csat-'+tabId);if(el)el.innerHTML=csatSectionHTML(prog);}
