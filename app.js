@@ -332,6 +332,9 @@ function processIssues(issues,progCfg,ttfrMap){
 }
 async function doRefresh(){
   const coe=state.activeCoe;
+  // Show diagnostic mode in header
+  const _mode = window.cowork ? 'cowork' : (typeof google !== 'undefined' && google.script && google.script.run ? 'gscript.run' : 'fetch-fallback');
+  document.getElementById('lastUpdated').textContent = 'Mode: ' + _mode + ' — loading...';
   if(state.loading) return;
   state.loading=true;
   document.getElementById('refreshBtn').disabled=true;
